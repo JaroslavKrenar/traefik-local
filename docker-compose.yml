@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  traefik-local:
+    build: .
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro # prevent issues with date and certificate times
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro # static traefik configuration
+      - ./conf/:/etc/traefik/conf/ # dynamic traefik configuration
+      - ./certs/:/etc/traefik/certs/ # SSL certificates
+      - ./mkcert/:/root/.local/share/mkcert
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.entrypoints=https
+      - traefik.http.routers.traefik.rule=Host(`traefik.local`)
+      - traefik.http.routers.traefik.tls=true
+      - traefik.http.routers.traefik.service=api@internal
+    networks:
+      - traefik-public
+networks:
+  traefik-public:
+    external: true
